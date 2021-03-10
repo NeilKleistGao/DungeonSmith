@@ -52,6 +52,114 @@ public class DungeonCreator : MonoBehaviour
         
     }
 
+    int GetIndex(int r, int c)
+    {
+        return r * WORLD_WIDTH + c;
+    }
+
+    bool Crop(int require)
+    {
+        var leaf = new ArrayList();
+        int[] degrees = new int[WORLD_WIDTH * WORLD_HEIGHT - 1];
+        for (int i = 0; i < WORLD_WIDTH; i++)
+        {
+            for (int j = 0; j < WORLD_HEIGHT; j++)
+            {
+                if (i == 0 && j == 0)
+                {
+                    continue;
+                }
+
+                int degree = 0;
+                if (i != 0 && connected[GetIndex(i, j), GetIndex(i - 1, j)])
+                {
+                    degree++;
+                }
+                if (i != WORLD_WIDTH - 1 && connected[GetIndex(i, j), GetIndex(i + 1, j)])
+                {
+                    degree++;
+                }
+                if (j != 0 && connected[GetIndex(i, j), GetIndex(i, j - 1)])
+                {
+                    degree++;
+                }
+                if (j != WORLD_HEIGHT - 1 && connected[GetIndex(i, j), GetIndex(i, j + 1)])
+                {
+                    degree++;
+                }
+
+                degrees[GetIndex(i, j)] = degree;
+
+                if (degree == 0)
+                {
+                    return false;
+                }
+                else if (degree == 1)
+                {
+                    leaf.Add(GetIndex(i, j));
+                }
+            }
+        }
+
+        int last = WORLD_WIDTH * WORLD_HEIGHT - 1;
+        var random = new System.Random();
+        while (last > require)
+        {
+            if (leaf.Count == 0)
+            {
+                return false;
+            }
+
+            int next = random.Next(leaf.Count);
+            int index = (int)leaf.ToArray()[next];
+            leaf.RemoveAt(next);
+            occupied[index / WORLD_WIDTH, index % WORLD_WIDTH] = false;
+            if (index + 1 < WORLD_WIDTH * WORLD_HEIGHT)
+            {
+                connected[index, index + 1] = connected[index + 1, index] = false;
+                degrees[index + 1]--;
+                if (degrees[index + 1] == 1)
+                {
+                    leaf.Add(index + 1);
+                }
+            }
+            if (index - 1 > 1)
+            {
+                connected[index, index - 1] = connected[index - 1, index] = false;
+                degrees[index - 1]--;
+                if (degrees[index - 1] == 1)
+                {
+                    leaf.Add(index - 1);
+                }
+            }
+            if (index + WORLD_WIDTH < WORLD_WIDTH * WORLD_HEIGHT)
+            {
+                connected[index, index + WORLD_WIDTH] = connected[index + WORLD_WIDTH, index] = false;
+                degrees[index + WORLD_WIDTH]--;
+                if (degrees[index + WORLD_WIDTH] == 1)
+                {
+                    leaf.Add(index + WORLD_WIDTH);
+                }
+            }
+            if (index - WORLD_WIDTH > 1)
+            {
+                connected[index, index - WORLD_WIDTH] = connected[index - WORLD_WIDTH, index] = false;
+                degrees[index - WORLD_WIDTH]--;
+                if (degrees[index - WORLD_WIDTH] == 1)
+                {
+                    leaf.Add(index - WORLD_WIDTH);
+                }
+            }
+        }
+
+        return true;
+    }
+
+    void Arrange()
+    {
+        // TODO:
+    }
+
     void CreateDungeon()
     {
         if (DUNGEON_PREFAB == null)
@@ -93,21 +201,59 @@ public class DungeonCreator : MonoBehaviour
             }
         }
 
-        occupied = new bool[WORLD_WIDTH, WORLD_HEIGHT];
-        connected = new bool[WORLD_WIDTH, WORLD_HEIGHT];
-        for (int i = 0; i < WORLD_WIDTH; i++)
+        while (!Crop(total - 1))
         {
-            for (int j = 0; j < WORLD_HEIGHT; j++)
+            occupied = new bool[WORLD_WIDTH, WORLD_HEIGHT];
+            connected = new bool[WORLD_WIDTH, WORLD_HEIGHT];
+            for (int i = 0; i < WORLD_WIDTH; i++)
             {
-                occupied[i, j] = false;
-                connected[i, j] = false;
+                for (int j = 0; j < WORLD_HEIGHT; j++)
+                {
+                    occupied[i, j] = true;
+                    connected[i, j] = false;
+                }
+            }
+
+            connected[0, 1] = connected[1, 0] = true;
+            int last = WORLD_WIDTH * WORLD_HEIGHT - 1;
+            var set = new UnionSet(last);
+            var list = new ArrayList();
+
+            for (int i = 0; i < WORLD_WIDTH; i++)
+            {
+                for (int j = 0; j < WORLD_HEIGHT; j++)
+                {
+                    if (i == 0 && j == 0)
+                    {
+                        continue;
+                    }
+
+                    if (i != WORLD_WIDTH - 1)
+                    {
+                        list.Add(new KeyValuePair<int, int>(GetIndex(i, j), GetIndex(i + 1, j)));
+                    }
+                    if (j != WORLD_HEIGHT - 1)
+                    {
+                        list.Add(new KeyValuePair<int, int>(GetIndex(i, j), GetIndex(i, j + 1)));
+                    }
+                }
+            }
+
+            var random = new System.Random();
+            while (last > 1)
+            {
+                int next = random.Next(0, list.Count);
+                KeyValuePair<int, int> edge = (KeyValuePair<int, int>)list.ToArray()[next];
+                list.RemoveAt(next);
+
+                if (set.Union(edge.Key, edge.Value))
+                {
+                    connected[edge.Key, edge.Value] = connected[edge.Value, edge.Key];
+                    last--;
+                }
             }
         }
 
-        occupied[0, 0] = true; connected[0, 1] = true;
-        ArrayList open_list = new ArrayList();
-        open_list.Add(1);
-
-        
+        Arrange();
     }
 }
