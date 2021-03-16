@@ -157,7 +157,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -174,7 +174,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 5
+  orthographic size: 4.8
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -204,6 +204,12 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &949989672 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7336259106789152207, guid: 915fde7a5b5ae4c4daf754ec1cda9918,
+    type: 3}
+  m_PrefabInstance: {fileID: 7336259107326188098}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &6403089789999069340
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -273,9 +279,67 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
         type: 3}
+      propertyPath: CAMERA
+      value: 
+      objectReference: {fileID: 519420031}
+    - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
+        type: 3}
+      propertyPath: ROOM_WIDHT
+      value: 27
+      objectReference: {fileID: 0}
+    - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
+        type: 3}
+      propertyPath: ROOM_HEIGHT
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
+        type: 3}
+      propertyPath: WORLD_WIDTH
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
+        type: 3}
+      propertyPath: WORLD_HEIGHT
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
+        type: 3}
+      propertyPath: DUNGEON_PREFAB
+      value: 
+      objectReference: {fileID: 949989672}
+    - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
+        type: 3}
+      propertyPath: INIT_ROOM_PREFABS
+      value: 
+      objectReference: {fileID: 3733557744026621965, guid: 28ea51b88fd8a0e45bfa1bfe7005c020,
+        type: 3}
+    - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
+        type: 3}
       propertyPath: ROOMS_DATA.Array.size
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
+        type: 3}
+      propertyPath: ROOM_NUMBERS.Array.size
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
+        type: 3}
+      propertyPath: ROOM_PREFABS.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
+        type: 3}
+      propertyPath: ROOM_PREFABS.Array.data[0]
+      value: 
+      objectReference: {fileID: 4226919349420289714, guid: 22c1d48a91dbf7d4eb5417a5d739ef48,
+        type: 3}
+    - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
+        type: 3}
+      propertyPath: ROOM_PREFABS.Array.data[1]
+      value: 
+      objectReference: {fileID: 507296225699053070, guid: 0b4b75d93a66602408844b8229167b1e,
+        type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ef638ddab1e05d540800582ddc3e11e0, type: 3}
 --- !u!1001 &7336259107326188098

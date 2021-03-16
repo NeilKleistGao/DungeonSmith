@@ -32,13 +32,14 @@ public class DungeonCreator : MonoBehaviour
     public GameObject DUNGEON_PREFAB;
     [Tooltip("Prefabs that used to build all kinds of rooms.")]
     public GameObject[] ROOM_PREFABS;
-    [Tooltip("How many rooms are required for each type.")]
-    public int[] ROOM_NUMBERS;
+    [Tooltip("Init room's prefab.")]
+    public GameObject INIT_ROOM_PREFABS;
 
     private Grid grid;
 
     private bool[,] occupied;
     private bool[,] connected;
+    private ArrayList leaf;
 
     // Start is called before the first frame update
     void Start()
@@ -57,10 +58,10 @@ public class DungeonCreator : MonoBehaviour
         return r * WORLD_WIDTH + c;
     }
 
-    bool Crop(int require)
+    void Crop(int require)
     {
-        var leaf = new ArrayList();
-        int[] degrees = new int[WORLD_WIDTH * WORLD_HEIGHT - 1];
+        leaf = new ArrayList();
+        int[] degrees = new int[WORLD_WIDTH * WORLD_HEIGHT];
         for (int i = 0; i < WORLD_WIDTH; i++)
         {
             for (int j = 0; j < WORLD_HEIGHT; j++)
@@ -90,11 +91,7 @@ public class DungeonCreator : MonoBehaviour
 
                 degrees[GetIndex(i, j)] = degree;
 
-                if (degree == 0)
-                {
-                    return false;
-                }
-                else if (degree == 1)
+                if (degree == 1)
                 {
                     leaf.Add(GetIndex(i, j));
                 }
@@ -105,16 +102,12 @@ public class DungeonCreator : MonoBehaviour
         var random = new System.Random();
         while (last > require)
         {
-            if (leaf.Count == 0)
-            {
-                return false;
-            }
-
             int next = random.Next(leaf.Count);
             int index = (int)leaf.ToArray()[next];
             leaf.RemoveAt(next);
             occupied[index / WORLD_WIDTH, index % WORLD_WIDTH] = false;
-            if (index + 1 < WORLD_WIDTH * WORLD_HEIGHT)
+            last--;
+            if (index + 1 < WORLD_WIDTH * WORLD_HEIGHT && connected[index, index + 1])
             {
                 connected[index, index + 1] = connected[index + 1, index] = false;
                 degrees[index + 1]--;
@@ -123,7 +116,7 @@ public class DungeonCreator : MonoBehaviour
                     leaf.Add(index + 1);
                 }
             }
-            if (index - 1 > 1)
+            if (index - 1 > 1 && connected[index, index - 1])
             {
                 connected[index, index - 1] = connected[index - 1, index] = false;
                 degrees[index - 1]--;
@@ -132,7 +125,7 @@ public class DungeonCreator : MonoBehaviour
                     leaf.Add(index - 1);
                 }
             }
-            if (index + WORLD_WIDTH < WORLD_WIDTH * WORLD_HEIGHT)
+            if (index + WORLD_WIDTH < WORLD_WIDTH * WORLD_HEIGHT && connected[index, index + WORLD_WIDTH])
             {
                 connected[index, index + WORLD_WIDTH] = connected[index + WORLD_WIDTH, index] = false;
                 degrees[index + WORLD_WIDTH]--;
@@ -141,7 +134,7 @@ public class DungeonCreator : MonoBehaviour
                     leaf.Add(index + WORLD_WIDTH);
                 }
             }
-            if (index - WORLD_WIDTH > 1)
+            if (index - WORLD_WIDTH > 1 && connected[index, index - WORLD_WIDTH])
             {
                 connected[index, index - WORLD_WIDTH] = connected[index - WORLD_WIDTH, index] = false;
                 degrees[index - WORLD_WIDTH]--;
@@ -151,13 +144,68 @@ public class DungeonCreator : MonoBehaviour
                 }
             }
         }
+    }
 
-        return true;
+    void SetRoom(GameObject prefab, int x, int y)
+    {
+        var room = Instantiate(prefab);
+        room.name = "room";
+        var pos = grid.CellToWorld(new Vector3Int(x * ROOM_WIDHT, -y * ROOM_HEIGHT, 0));
+        var size = grid.cellSize;
+        room.transform.position =
+            new Vector3(pos.x + size.x * WORLD_WIDTH / 2, pos.y - size.y * WORLD_HEIGHT, 0);
+    }
+
+    void ArrangeUnique()
+    {
+        foreach (GameObject prefab in ROOM_PREFABS)
+        {
+            var room = prefab.GetComponent<DungeonRoom>();
+            if (room.UNIQUE_ENTRY)
+            {
+                var random = new System.Random();
+                for (int i = 0; i < room.REQUIRED_IN_LEVEL; i++)
+                {
+                    int next = random.Next(0, leaf.Count);
+                    SetRoom(prefab, next / WORLD_WIDTH, next % WORLD_WIDTH);
+                }
+            }
+        }
     }
 
     void Arrange()
     {
-        // TODO:
+        int roomIndex = 0, roomCount = ROOM_PREFABS[roomIndex].GetComponent<DungeonRoom>().REQUIRED_IN_LEVEL;
+
+        for (int i = 0; i < WORLD_WIDTH; i++) 
+        {
+            for (int j = 0; j < WORLD_HEIGHT; j++)
+            {
+                if (occupied[i, j])
+                {
+                    if (i == 0 && j == 0)
+                    {
+                        SetRoom(INIT_ROOM_PREFABS, i, j);
+                        roomCount--;
+                    }
+                    else if (!ROOM_PREFABS[roomIndex].GetComponent<DungeonRoom>().UNIQUE_ENTRY) 
+                    {
+                        if (roomCount == 0)
+                        {
+                            roomIndex++;
+                            if (roomIndex == ROOM_PREFABS.Length)
+                            {
+                                return;
+                            }
+                            roomCount = ROOM_PREFABS[roomIndex].GetComponent<DungeonRoom>().REQUIRED_IN_LEVEL;
+                        }
+
+                        SetRoom(ROOM_PREFABS[roomIndex], i, j);
+                        roomCount--;
+                    }
+                }
+            }
+        }
     }
 
     void CreateDungeon()
@@ -175,18 +223,6 @@ public class DungeonCreator : MonoBehaviour
             return;
         }
 
-        if (ROOM_NUMBERS.Length != ROOM_PREFABS.Length)
-        {
-            Debug.Log("Please make sure room numbers and room prefabs have the same length!");
-            return;
-        }
-
-        if (ROOM_NUMBERS.Length > WORLD_WIDTH * WORLD_HEIGHT)
-        {
-            Debug.Log("Too many rooms are specified!");
-            return;
-        }
-
         int total = 0;
         foreach (GameObject prefab in ROOM_PREFABS)
         {
@@ -201,59 +237,58 @@ public class DungeonCreator : MonoBehaviour
             }
         }
 
-        while (!Crop(total - 1))
+        connected = new bool[WORLD_WIDTH * WORLD_HEIGHT, WORLD_WIDTH * WORLD_HEIGHT];
+        occupied = new bool[WORLD_WIDTH, WORLD_HEIGHT];
+        for (int i = 0; i < WORLD_WIDTH; i++)
         {
-            occupied = new bool[WORLD_WIDTH, WORLD_HEIGHT];
-            connected = new bool[WORLD_WIDTH, WORLD_HEIGHT];
-            for (int i = 0; i < WORLD_WIDTH; i++)
+            for (int j = 0; j < WORLD_HEIGHT; j++)
             {
-                for (int j = 0; j < WORLD_HEIGHT; j++)
-                {
-                    occupied[i, j] = true;
-                    connected[i, j] = false;
-                }
+                occupied[i, j] = true;
+                connected[i, j] = false;
             }
+        }
 
-            connected[0, 1] = connected[1, 0] = true;
-            int last = WORLD_WIDTH * WORLD_HEIGHT - 1;
-            var set = new UnionSet(last);
-            var list = new ArrayList();
+        connected[0, 1] = connected[1, 0] = true;
+        int last = WORLD_WIDTH * WORLD_HEIGHT - 1;
+        var set = new UnionSet(last + 1);
+        var list = new ArrayList();
 
-            for (int i = 0; i < WORLD_WIDTH; i++)
+        for (int i = 0; i < WORLD_WIDTH; i++)
+        {
+            for (int j = 0; j < WORLD_HEIGHT; j++)
             {
-                for (int j = 0; j < WORLD_HEIGHT; j++)
+                if (i == 0 && j == 0)
                 {
-                    if (i == 0 && j == 0)
-                    {
-                        continue;
-                    }
-
-                    if (i != WORLD_WIDTH - 1)
-                    {
-                        list.Add(new KeyValuePair<int, int>(GetIndex(i, j), GetIndex(i + 1, j)));
-                    }
-                    if (j != WORLD_HEIGHT - 1)
-                    {
-                        list.Add(new KeyValuePair<int, int>(GetIndex(i, j), GetIndex(i, j + 1)));
-                    }
+                    continue;
                 }
-            }
 
-            var random = new System.Random();
-            while (last > 1)
-            {
-                int next = random.Next(0, list.Count);
-                KeyValuePair<int, int> edge = (KeyValuePair<int, int>)list.ToArray()[next];
-                list.RemoveAt(next);
-
-                if (set.Union(edge.Key, edge.Value))
+                if (i != WORLD_WIDTH - 1)
                 {
-                    connected[edge.Key, edge.Value] = connected[edge.Value, edge.Key];
-                    last--;
+                    list.Add(new KeyValuePair<int, int>(GetIndex(i, j), GetIndex(i + 1, j)));
+                }
+                if (j != WORLD_HEIGHT - 1)
+                {
+                    list.Add(new KeyValuePair<int, int>(GetIndex(i, j), GetIndex(i, j + 1)));
                 }
             }
         }
 
+        var random = new System.Random();
+        while (last > 1)
+        {
+            int next = random.Next(0, list.Count);
+            KeyValuePair<int, int> edge = (KeyValuePair<int, int>)list.ToArray()[next];
+            list.RemoveAt(next);
+
+            if (set.Union(edge.Key, edge.Value))
+            {
+                connected[edge.Key, edge.Value] = connected[edge.Value, edge.Key] = true;
+                last--;
+            }
+        }
+        Crop(total);
+
+        ArrangeUnique();
         Arrange();
     }
 }

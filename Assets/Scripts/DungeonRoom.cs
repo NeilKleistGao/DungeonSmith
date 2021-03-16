@@ -12,6 +12,8 @@ public class DungeonRoom : MonoBehaviour
     [Tooltip("Should this room have a unique entry.")]
     public bool UNIQUE_ENTRY;
 
+    public bool upConnected, downConnected, leftConnected, rightConnected;
+
     void Start()
     {
         
