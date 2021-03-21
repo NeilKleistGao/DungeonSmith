@@ -174,7 +174,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 4.8
+  orthographic size: 5
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -340,6 +340,28 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 507296225699053070, guid: 0b4b75d93a66602408844b8229167b1e,
         type: 3}
+    - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
+        type: 3}
+      propertyPath: GENERAL_ROOM_PREFABS.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
+        type: 3}
+      propertyPath: SPECIAL_ROOM_PREFABS.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
+        type: 3}
+      propertyPath: GENERAL_ROOM_PREFABS.Array.data[0]
+      value: 
+      objectReference: {fileID: 4226919349420289714, guid: 22c1d48a91dbf7d4eb5417a5d739ef48,
+        type: 3}
+    - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
+        type: 3}
+      propertyPath: SPECIAL_ROOM_PREFABS.Array.data[0]
+      value: 
+      objectReference: {fileID: 507296225699053070, guid: 0b4b75d93a66602408844b8229167b1e,
+        type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ef638ddab1e05d540800582ddc3e11e0, type: 3}
 --- !u!1001 &7336259107326188098
@@ -357,12 +379,12 @@ PrefabInstance:
     - target: {fileID: 7336259106789152204, guid: 915fde7a5b5ae4c4daf754ec1cda9918,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: 8.91
       objectReference: {fileID: 0}
     - target: {fileID: 7336259106789152204, guid: 915fde7a5b5ae4c4daf754ec1cda9918,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: -5.02
       objectReference: {fileID: 0}
     - target: {fileID: 7336259106789152204, guid: 915fde7a5b5ae4c4daf754ec1cda9918,
         type: 3}
@@ -403,6 +425,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7336259106789152205, guid: 915fde7a5b5ae4c4daf754ec1cda9918,
+        type: 3}
+      propertyPath: m_CellSize.x
+      value: 17.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 7336259106789152205, guid: 915fde7a5b5ae4c4daf754ec1cda9918,
+        type: 3}
+      propertyPath: m_CellSize.y
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 7336259106789152207, guid: 915fde7a5b5ae4c4daf754ec1cda9918,
         type: 3}

@@ -24,4 +24,9 @@ public class DungeonRoom : MonoBehaviour
     {
         
     }
+
+    public void init()
+    {
+        
+    }
 }

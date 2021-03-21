@@ -1,28 +1,17 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
+using UnityEditor;
 using UnityEngine;
 
 public class DungeonCreator : MonoBehaviour
 {
-    [Header("Size Configuration")]
 
-    [Tooltip("How many rooms a world has in a row.")]
-    public int WORLD_WIDTH;
-    [Tooltip("How many rooms a world has in a column.")]
-    public int WORLD_HEIGHT;
-    [Tooltip("How many grids a room has in a row.")]
-    public int ROOM_WIDHT;
-    [Tooltip("How many grids a room has in a column.")]
-    public int ROOM_HEIGHT;
-
-    [Space()]
     [Header("Initial Properties")]
-
     [Tooltip("Player's startup position.")]
     public Vector2 INIT_PLAYER_POS;
-    [Tooltip("First room where player is. (0, 0) for left top room.")]
-    public Vector2Int INIT_ROOM_INDEX;
     [Tooltip("Camera")]
     public Camera CAMERA;
 
@@ -30,185 +19,22 @@ public class DungeonCreator : MonoBehaviour
     [Header("Dungeon Settings")]
     [Tooltip("Dungeon prefab.")]
     public GameObject DUNGEON_PREFAB;
-    [Tooltip("Prefabs that used to build all kinds of rooms.")]
-    public GameObject[] ROOM_PREFABS;
+    [Tooltip("Prefabs that used to build all kinds of general rooms.")]
+    public GameObject[] GENERAL_ROOM_PREFABS;
+    [Tooltip("Prefabs that used to build all kinds of special rooms.")]
+    public GameObject[] SPECIAL_ROOM_PREFABS;
     [Tooltip("Init room's prefab.")]
     public GameObject INIT_ROOM_PREFABS;
 
     private Grid grid;
-
-    private bool[,] occupied;
-    private bool[,] connected;
-    private ArrayList leaf;
+    private Vector2Int init_room_pos;
+    private bool[,] visit;
+    private int max_width;
+    private ArrayList general_require;
+    private ArrayList special_require;
 
     // Start is called before the first frame update
     void Start()
-    {
-        CreateDungeon();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
-    int GetIndex(int r, int c)
-    {
-        return r * WORLD_WIDTH + c;
-    }
-
-    void Crop(int require)
-    {
-        leaf = new ArrayList();
-        int[] degrees = new int[WORLD_WIDTH * WORLD_HEIGHT];
-        for (int i = 0; i < WORLD_WIDTH; i++)
-        {
-            for (int j = 0; j < WORLD_HEIGHT; j++)
-            {
-                if (i == 0 && j == 0)
-                {
-                    continue;
-                }
-
-                int degree = 0;
-                if (i != 0 && connected[GetIndex(i, j), GetIndex(i - 1, j)])
-                {
-                    degree++;
-                }
-                if (i != WORLD_WIDTH - 1 && connected[GetIndex(i, j), GetIndex(i + 1, j)])
-                {
-                    degree++;
-                }
-                if (j != 0 && connected[GetIndex(i, j), GetIndex(i, j - 1)])
-                {
-                    degree++;
-                }
-                if (j != WORLD_HEIGHT - 1 && connected[GetIndex(i, j), GetIndex(i, j + 1)])
-                {
-                    degree++;
-                }
-
-                degrees[GetIndex(i, j)] = degree;
-
-                if (degree == 1)
-                {
-                    leaf.Add(GetIndex(i, j));
-                }
-            }
-        }
-
-        int last = WORLD_WIDTH * WORLD_HEIGHT - 1;
-        var random = new System.Random();
-        while (last > require)
-        {
-            int next = random.Next(leaf.Count);
-            int index = (int)leaf.ToArray()[next];
-            leaf.RemoveAt(next);
-            occupied[index / WORLD_WIDTH, index % WORLD_WIDTH] = false;
-            last--;
-            if (index + 1 < WORLD_WIDTH * WORLD_HEIGHT && connected[index, index + 1])
-            {
-                connected[index, index + 1] = connected[index + 1, index] = false;
-                degrees[index + 1]--;
-                if (degrees[index + 1] == 1)
-                {
-                    leaf.Add(index + 1);
-                }
-            }
-            if (index - 1 > 1 && connected[index, index - 1])
-            {
-                connected[index, index - 1] = connected[index - 1, index] = false;
-                degrees[index - 1]--;
-                if (degrees[index - 1] == 1)
-                {
-                    leaf.Add(index - 1);
-                }
-            }
-            if (index + WORLD_WIDTH < WORLD_WIDTH * WORLD_HEIGHT && connected[index, index + WORLD_WIDTH])
-            {
-                connected[index, index + WORLD_WIDTH] = connected[index + WORLD_WIDTH, index] = false;
-                degrees[index + WORLD_WIDTH]--;
-                if (degrees[index + WORLD_WIDTH] == 1)
-                {
-                    leaf.Add(index + WORLD_WIDTH);
-                }
-            }
-            if (index - WORLD_WIDTH > 1 && connected[index, index - WORLD_WIDTH])
-            {
-                connected[index, index - WORLD_WIDTH] = connected[index - WORLD_WIDTH, index] = false;
-                degrees[index - WORLD_WIDTH]--;
-                if (degrees[index - WORLD_WIDTH] == 1)
-                {
-                    leaf.Add(index - WORLD_WIDTH);
-                }
-            }
-        }
-    }
-
-    void SetRoom(GameObject prefab, int x, int y)
-    {
-        var room = Instantiate(prefab);
-        room.name = "room";
-        var pos = grid.CellToWorld(new Vector3Int(x * ROOM_WIDHT, -y * ROOM_HEIGHT, 0));
-        var size = grid.cellSize;
-        room.transform.position =
-            new Vector3(pos.x + size.x * WORLD_WIDTH / 2, pos.y - size.y * WORLD_HEIGHT, 0);
-    }
-
-    void ArrangeUnique()
-    {
-        foreach (GameObject prefab in ROOM_PREFABS)
-        {
-            var room = prefab.GetComponent<DungeonRoom>();
-            if (room.UNIQUE_ENTRY)
-            {
-                var random = new System.Random();
-                for (int i = 0; i < room.REQUIRED_IN_LEVEL; i++)
-                {
-                    int next = random.Next(0, leaf.Count);
-                    SetRoom(prefab, next / WORLD_WIDTH, next % WORLD_WIDTH);
-                }
-            }
-        }
-    }
-
-    void Arrange()
-    {
-        int roomIndex = 0, roomCount = ROOM_PREFABS[roomIndex].GetComponent<DungeonRoom>().REQUIRED_IN_LEVEL;
-
-        for (int i = 0; i < WORLD_WIDTH; i++) 
-        {
-            for (int j = 0; j < WORLD_HEIGHT; j++)
-            {
-                if (occupied[i, j])
-                {
-                    if (i == 0 && j == 0)
-                    {
-                        SetRoom(INIT_ROOM_PREFABS, i, j);
-                        roomCount--;
-                    }
-                    else if (!ROOM_PREFABS[roomIndex].GetComponent<DungeonRoom>().UNIQUE_ENTRY) 
-                    {
-                        if (roomCount == 0)
-                        {
-                            roomIndex++;
-                            if (roomIndex == ROOM_PREFABS.Length)
-                            {
-                                return;
-                            }
-                            roomCount = ROOM_PREFABS[roomIndex].GetComponent<DungeonRoom>().REQUIRED_IN_LEVEL;
-                        }
-
-                        SetRoom(ROOM_PREFABS[roomIndex], i, j);
-                        roomCount--;
-                    }
-                }
-            }
-        }
-    }
-
-    void CreateDungeon()
     {
         if (DUNGEON_PREFAB == null)
         {
@@ -223,72 +49,130 @@ public class DungeonCreator : MonoBehaviour
             return;
         }
 
-        int total = 0;
-        foreach (GameObject prefab in ROOM_PREFABS)
+        if (CAMERA == null)
         {
-            var room = prefab.GetComponent<DungeonRoom>();
-            if (room == null)
-            {
-                Debug.Log("Missing DungeonRoom component in dungeon room prefab!");
-            }
-            else
-            {
-                total += room.REQUIRED_IN_LEVEL;
-            }
+            Debug.Log("Missing default camera!");
+            return;
         }
 
-        connected = new bool[WORLD_WIDTH * WORLD_HEIGHT, WORLD_WIDTH * WORLD_HEIGHT];
-        occupied = new bool[WORLD_WIDTH, WORLD_HEIGHT];
-        for (int i = 0; i < WORLD_WIDTH; i++)
+        CreateDungeon();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+
+    void GenerateRoom(GameObject[] prefabs, ref ArrayList require_list, Vector2Int index)
+    {
+        System.Random random = new System.Random();
+        int next = random.Next(0, require_list.Count);
+        var data = (Vector2Int)require_list.ToArray()[next];
+        require_list.RemoveAt(next);
+
+        var room = Instantiate(prefabs[data.x]);
+        room.GetComponent<DungeonRoom>().init();
+        Vector3 pos = grid.CellToWorld(new Vector3Int(index.x, index.y, 0));
+        room.transform.position = pos;
+
+        data.y--;
+        if (data.y > 0)
         {
-            for (int j = 0; j < WORLD_HEIGHT; j++)
-            {
-                occupied[i, j] = true;
-                connected[i, j] = false;
-            }
+            require_list.Add(data);
+        }
+    }
+
+    void GeneratePath(Vector2Int current, int general_count, int special_count)
+    {
+        visit[current.x, current.y] = true;
+        if (general_count == 1)
+        {
+            GenerateRoom(GENERAL_ROOM_PREFABS, ref general_require, current);
+            return;
+        }
+        else if (special_count == 1)
+        {
+            GenerateRoom(SPECIAL_ROOM_PREFABS, ref special_require, current);
+
+            return;
         }
 
-        connected[0, 1] = connected[1, 0] = true;
-        int last = WORLD_WIDTH * WORLD_HEIGHT - 1;
-        var set = new UnionSet(last + 1);
-        var list = new ArrayList();
+        GenerateRoom(GENERAL_ROOM_PREFABS, ref general_require, current);
 
-        for (int i = 0; i < WORLD_WIDTH; i++)
+        ArrayList fwd = new ArrayList();
+        fwd.Add(new Vector2Int(current.x + 1, current.y));
+        fwd.Add(new Vector2Int(current.x - 1, current.y));
+        fwd.Add(new Vector2Int(current.x, current.y + 1));
+        fwd.Add(new Vector2Int(current.x, current.y - 1));
+
+        System.Random random = new System.Random();
+        for (int i = 0; i < 4; i++)
         {
-            for (int j = 0; j < WORLD_HEIGHT; j++)
+            int next = random.Next(0, 4 - i);
+            Vector2Int pos = (Vector2Int)fwd.ToArray()[next];
+            fwd.RemoveAt(next);
+            if (pos.x > -1 && pos.y > -1 && pos.x < max_width && pos.y < max_width && !visit[pos.x, pos.y])
             {
-                if (i == 0 && j == 0)
+                int next_gen = random.Next(0, general_count),
+                    next_spe = random.Next(0, Math.Min(special_count + 1, next_gen));
+
+                if (i == 3)
                 {
-                    continue;
+                    next_gen = general_count;
+                    next_spe = special_count;
                 }
 
-                if (i != WORLD_WIDTH - 1)
+                if (next_gen + next_spe > 0)
                 {
-                    list.Add(new KeyValuePair<int, int>(GetIndex(i, j), GetIndex(i + 1, j)));
-                }
-                if (j != WORLD_HEIGHT - 1)
-                {
-                    list.Add(new KeyValuePair<int, int>(GetIndex(i, j), GetIndex(i, j + 1)));
+                    GeneratePath(pos, next_gen, special_count);
+                    general_count -= next_gen; special_count -= next_spe;
                 }
             }
         }
+    }
 
-        var random = new System.Random();
-        while (last > 1)
+    void CreateDungeon()
+    {
+        var camera_pos = CAMERA.transform.position;
+        var temp = grid.WorldToCell(camera_pos);
+        init_room_pos = new Vector2Int(temp.x, temp.y);
+
+        var room = Instantiate(INIT_ROOM_PREFABS);
+        room.GetComponent<DungeonRoom>().init();
+        room.transform.position = new Vector3(camera_pos.x, camera_pos.y, 0);
+
+        general_require = new ArrayList();
+        special_require = new ArrayList();
+
+        int general_count = 0, special_count = 0, it = 0;
+        foreach (var pre in GENERAL_ROOM_PREFABS)
         {
-            int next = random.Next(0, list.Count);
-            KeyValuePair<int, int> edge = (KeyValuePair<int, int>)list.ToArray()[next];
-            list.RemoveAt(next);
+            int r = pre.GetComponent<DungeonRoom>().REQUIRED_IN_LEVEL;
+            general_count += r;
+            general_require.Add(new Vector2Int(it, r));
+            it++;
+        }
 
-            if (set.Union(edge.Key, edge.Value))
+        it = 0;
+        foreach (var pre in SPECIAL_ROOM_PREFABS)
+        {
+            int r = pre.GetComponent<DungeonRoom>().REQUIRED_IN_LEVEL;
+            special_count += r;
+            special_require.Add(new Vector2Int(it, r));
+            it++;
+        }
+
+        max_width = (general_count + special_count) * 2 + 1;
+        visit = new bool[max_width, max_width];
+        for (int i = 0; i < max_width; i++)
+        {
+            for (int j = 0; j < max_width; j++)
             {
-                connected[edge.Key, edge.Value] = connected[edge.Value, edge.Key] = true;
-                last--;
+                visit[i, j] = false;
             }
         }
-        Crop(total);
 
-        ArrangeUnique();
-        Arrange();
+        GeneratePath(new Vector2Int(max_width / 2, max_width / 2), general_count, special_count);
     }
 }
