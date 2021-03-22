@@ -284,6 +284,16 @@ PrefabInstance:
       objectReference: {fileID: 519420031}
     - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
         type: 3}
+      propertyPath: MAX_WIDHT
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
+        type: 3}
+      propertyPath: MAX_HEIGHT
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
+        type: 3}
       propertyPath: ROOM_WIDHT
       value: 27
       objectReference: {fileID: 0}
@@ -309,9 +319,20 @@ PrefabInstance:
       objectReference: {fileID: 949989672}
     - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
         type: 3}
+      propertyPath: INIT_PLAYER_POS.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
+        type: 3}
       propertyPath: INIT_ROOM_PREFABS
       value: 
       objectReference: {fileID: 3733557744026621965, guid: 28ea51b88fd8a0e45bfa1bfe7005c020,
+        type: 3}
+    - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
+        type: 3}
+      propertyPath: DEFAULT_ROOM_PREFABS
+      value: 
+      objectReference: {fileID: 4226919349420289714, guid: 22c1d48a91dbf7d4eb5417a5d739ef48,
         type: 3}
     - target: {fileID: 6403089791025673327, guid: ef638ddab1e05d540800582ddc3e11e0,
         type: 3}
