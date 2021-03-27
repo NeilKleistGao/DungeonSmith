@@ -10,7 +10,7 @@ public class DungeonCreator : MonoBehaviour
 {
     [Header("Size Options")]
     [Tooltip("Max dungeon's width")]
-    public int MAX_WIDHT;
+    public int MAX_WIDTH;
     [Tooltip("Max dungeon's height")]
     public int MAX_HEIGHT;
 
@@ -37,6 +37,10 @@ public class DungeonCreator : MonoBehaviour
     private Vector2Int init_room_pos;
     private Vector2 cell_size;
     private bool[,] visit;
+    private bool[,] available;
+    private UnionSet set = null;
+    private ArrayList general_list = new ArrayList();
+    private ArrayList special_list = new ArrayList();
 
     // Start is called before the first frame update
     void Start()
@@ -86,42 +90,93 @@ public class DungeonCreator : MonoBehaviour
         room.transform.position = new Vector3(pos.x - cell_size.x / 2, pos.y + cell_size.y / 2, 0);
     }
 
-    void GenerateRoom(GameObject[] prefabs, ref ArrayList require_list, Vector2Int index)
+    void GenerateRoom(GameObject[] prefabs, ArrayList id_list)
     {
-        if (require_list.Count == 0)
+        var random = new System.Random();
+        foreach (var prefab in prefabs)
         {
-            GenerateRoom(DEFAULT_ROOM_PREFABS, index);
-        }
-        else
-        {
-            System.Random random = new System.Random();
-            int next = random.Next(0, require_list.Count);
-            var data = (Vector2Int)require_list.ToArray()[next];
-            require_list.RemoveAt(next);
-
-            GenerateRoom(prefabs[data.x], index);
-
-            data.y--;
-            if (data.y != 0)
+            var room = prefab.GetComponent<DungeonRoom>();
+            for (int i = 0; i < room.REQUIRED_IN_LEVEL; i++)
             {
-                require_list.Add(data);
+                int next = random.Next(0, id_list.Count);
+                int index = (int)id_list.ToArray()[next];
+                id_list.RemoveAt(next);
+
+                GenerateRoom(prefab,
+                    new Vector2Int(index % MAX_WIDTH, index / MAX_WIDTH));
+            }
+        }
+
+        foreach (int index in id_list)
+        {
+            GenerateRoom(DEFAULT_ROOM_PREFABS,
+                new Vector2Int(index % MAX_WIDTH, index / MAX_WIDTH));
+        }
+    }
+
+    void connect()
+    {
+        bool flag = true;
+        var random = new System.Random();
+        while (flag)
+        {
+            flag = false;
+            int init = init_room_pos.y * MAX_WIDTH + init_room_pos.x;
+            foreach (int index in special_list)
+            {
+                if (set.Find(init) != set.Find(index))
+                {
+                    flag = true;
+                    break;
+                }
+            }
+
+            if (!flag)
+            {
+                break;
+            }
+
+
+            int next1, next2;
+            do
+            {
+                next1 = random.Next(0, MAX_WIDTH * MAX_HEIGHT);
+                next2 = random.Next(0, MAX_WIDTH * MAX_HEIGHT);
+            } while (!available[next1 % MAX_WIDTH, next1 / MAX_WIDTH]
+                        || !available[next2 % MAX_WIDTH, next2 / MAX_WIDTH]);
+
+            if (set.Union(next1, next2))
+            {
+                if (!visit[next1 % MAX_WIDTH, next1 / MAX_WIDTH])
+                {
+                    visit[next1 % MAX_WIDTH, next1 / MAX_WIDTH] = true;
+                    general_list.Add(next1);
+                }
+                if (!visit[next2 % MAX_WIDTH, next2 / MAX_WIDTH])
+                {
+                    visit[next2 % MAX_WIDTH, next2 / MAX_WIDTH] = true;
+                    general_list.Add(next2);
+                }
             }
         }
     }
 
     void CreateDungeon()
     {
-        visit = new bool[MAX_WIDHT, MAX_HEIGHT];
-        for (int i = 0; i < MAX_WIDHT; i++)
+        visit = new bool[MAX_WIDTH, MAX_HEIGHT];
+        available = new bool[MAX_WIDTH, MAX_HEIGHT];
+        set = new UnionSet(MAX_WIDTH * MAX_HEIGHT);
+        for (int i = 0; i < MAX_WIDTH; i++)
         {
             for (int j = 0; j < MAX_HEIGHT; j++)
             {
                 visit[i, j] = false;
+                available[i, j] = true;
             }
         }
 
         var random = new System.Random();
-        init_room_pos = new Vector2Int(random.Next(0, MAX_WIDHT),
+        init_room_pos = new Vector2Int(random.Next(0, MAX_WIDTH),
             random.Next(0, MAX_HEIGHT));
         visit[init_room_pos.x, init_room_pos.y] = true;
 
@@ -134,35 +189,85 @@ public class DungeonCreator : MonoBehaviour
             {
                 Vector2Int pos;
                 bool flag = false;
+                ArrayList near = new ArrayList();
                 do
                 {
                     flag = false;
-                    pos = new Vector2Int(random.Next(0, MAX_WIDHT),
+                    pos = new Vector2Int(random.Next(0, MAX_WIDTH),
                     random.Next(0, MAX_HEIGHT));
                     flag = visit[pos.x, pos.y];
 
+                    near.Clear();
+
                     if (pos.x - 1 > -1)
                     {
-                        flag = flag || visit[pos.x - 1, pos.y];
+                        if (!visit[pos.x - 1, pos.y])
+                        {
+                            near.Add(pos.y * MAX_WIDTH + pos.x - 1);
+                        }
+                        else
+                        {
+                            flag = true;
+                        }
                     }
-                    if (pos.x + 1 < MAX_WIDHT)
+                    if (pos.x + 1 < MAX_WIDTH)
                     {
-                        flag = flag || visit[pos.x + 1, pos.y];
+                        if (!visit[pos.x + 1, pos.y])
+                        {
+                            near.Add(pos.y * MAX_WIDTH + pos.x + 1);
+                        }
+                        else
+                        {
+                            flag = true;
+                        }
                     }
                     if (pos.y - 1 > -1)
                     {
-                        flag = flag || visit[pos.x, pos.y - 1];
+                        if (!visit[pos.x, pos.y - 1])
+                        {
+                            near.Add((pos.y - 1) * MAX_WIDTH + pos.x);
+                        }
+                        else
+                        {
+                            flag = true;
+                        }
                     }
                     if (pos.y + 1 < MAX_HEIGHT)
                     {
-                        flag = flag || visit[pos.x, pos.y + 1];
+                        if (!visit[pos.x, pos.y + 1])
+                        {
+                            near.Add((pos.y + 1) * MAX_WIDTH + pos.x);
+                        }
+                        else
+                        {
+                            flag = true;
+                        }
                     }
                 }
                 while (flag);
 
                 visit[pos.x, pos.y] = true;
                 GenerateRoom(prefab, pos);
+
+                int next = random.Next(near.Count);
+                int index = (int)near.ToArray()[next];
+                int curent = pos.y * MAX_WIDTH + pos.x;
+
+                general_list.Add(index);
+                special_list.Add(curent);
+                set.Union(curent, index);
+
+                foreach (int n in near)
+                {
+                    if (n != index)
+                    {
+                        available[n % MAX_WIDTH, n / MAX_WIDTH] = false;
+                    }
+                }
             }
         }
+
+        connect();
+        GenerateRoom(GENERAL_ROOM_PREFABS, general_list);
     }
 }
